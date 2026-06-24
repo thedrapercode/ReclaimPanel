@@ -1,7 +1,7 @@
 /*
  * ReclaimPanel Firmware v1.8.0
  * Open source ESP32 driver for P20 triangle LED panels
- * https://github.com/jdlabs/ReclaimPanel
+ * https://github.com/thedrapercode/ReclaimPanel
  *
  * Developed by JD Labs - Draper Family Light Show, Kenton Ohio
  * MIT License
