@@ -1,0 +1,25 @@
+# Arduino build artifacts
+build/
+*.bin
+*.elf
+*.map
+*.hex
+*.eep
+
+# Development scratch folders (not part of release)
+P16_Panel_*/
+P20_Panel_*/
+Panel_test_*/
+ReclaimPanelTesting/
+ReclaimPanelNEWSTABLE615/
+ReclaimPanelTheOne/
+ReclaimPanelv1*/
+libraries/
+
+# Loose scratch files
+ReclaimPanelALLPANELSWORKSTABLE.ino
+ReclaimPanelTesting_v1.4.0.ino
+ReclaimPanelv1.04.ino
+fppd.log
+*.ino.bak
+HANDOVER.md

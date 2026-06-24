@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReclaimPanel - ESP32 LED Panel Driver</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+  <style>
+    :root {
+      --orange: #ff6600;
+      --orange-dark: #cc4400;
+      --bg: #0e0e0e;
+      --surface: #1a1a1a;
+      --surface2: #222;
+      --border: #333;
+      --text: #ddd;
+      --muted: #888;
+      --green: #00cc66;
+      --red: #cc3300;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* NAV */
+    nav {
+      background: #111;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    nav .logo { color: var(--orange); font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+    nav .logo span { color: var(--text); font-weight: normal; font-size: 14px; margin-left: 10px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 20px; }
+    nav a:hover { color: var(--orange); }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 64px 24px 48px;
+      background: linear-gradient(180deg, #161616 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(32px, 6vw, 56px);
+      color: var(--orange);
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+    .hero .subtitle {
+      font-size: clamp(15px, 2.5vw, 20px);
+      color: var(--muted);
+      max-width: 620px;
+      margin: 0 auto 32px;
+    }
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .badge.green { border-color: #2a5a3a; color: var(--green); background: #0d1f15; }
+
+    /* INSTALL CARD */
+    .install-card {
+      background: var(--surface);
+      border: 2px solid var(--orange);
+      border-radius: 12px;
+      padding: 32px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    .install-card h2 { color: var(--orange); margin-bottom: 8px; font-size: 20px; }
+    .install-card p  { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+    esp-web-install-button {
+      display: block;
+      margin: 0 auto 16px;
+      --esp-tools-button-color: var(--orange);
+      --esp-tools-button-text-color: #fff;
+    }
+    esp-web-install-button::part(button) {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: 0.5px;
+    }
+    esp-web-install-button::part(button):hover { background: var(--orange-dark); }
+
+    .compat-note {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .compat-note a { color: var(--orange); }
+
+    /* SECTIONS */
+    .section {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; }
+    .section h2 {
+      color: var(--orange);
+      font-size: 22px;
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* STEPS */
+    .steps { list-style: none; counter-reset: step; }
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      background: var(--orange);
+      color: #fff;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .steps li .step-content h3 { font-size: 16px; color: #eee; margin-bottom: 4px; }
+    .steps li .step-content p  { font-size: 14px; color: var(--muted); }
+    .steps li .step-content code {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 13px;
+      color: #aaf;
+      font-family: monospace;
+    }
+
+    /* FEATURE GRID */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .feature-card h3 { color: #eee; font-size: 15px; margin-bottom: 6px; }
+    .feature-card p  { color: var(--muted); font-size: 13px; }
+
+    /* HARDWARE TABLE */
+    .hw-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .hw-table th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: normal;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px 8px 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .hw-table td {
+      padding: 10px 12px 10px 0;
+      border-bottom: 1px solid #222;
+      vertical-align: top;
+    }
+    .hw-table td:first-child { color: #eee; }
+    .hw-table td:last-child  { color: var(--muted); }
+
+    /* WIRING */
+    .wiring-block {
+      background: #0a0a14;
+      border: 1px solid #2a2a4a;
+      border-radius: 6px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #8af;
+      line-height: 2;
+      overflow-x: auto;
+    }
+
+    /* CALLOUT */
+    .callout {
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .callout.warn  { background: #1a1400; border: 1px solid #443300; color: #cc9900; }
+    .callout.info  { background: #0d1a0d; border: 1px solid #2a4a2a; color: #66aa66; }
+    .callout.tip   { background: #0d0d1a; border: 1px solid #2a2a5a; color: #6688cc; }
+
+    /* FAQ */
+    .faq-item { margin-bottom: 20px; }
+    .faq-item h3 { color: #eee; font-size: 15px; margin-bottom: 6px; }
+    .faq-item p  { color: var(--muted); font-size: 14px; }
+
+    /* FOOTER */
+    footer {
+      background: #111;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a { color: var(--orange); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .install-card { padding: 20px; }
+      nav a { margin-left: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div>
+    <span class="logo">ReclaimPanel</span>
+    <span class="logo"><span>by JD Labs - Draper Family Light Show</span></span>
+  </div>
+  <div>
+    <a href="https://github.com/thedrapercode/ReclaimPanel">GitHub</a>
+    <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/docs/WIRING.md">Wiring</a>
+    <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/docs/XLIGHTS_FPP.md">xLights / FPP</a>
+    <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/CHANGELOG.md">Changelog</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>ReclaimPanel</h1>
+  <p class="subtitle">
+    Open-source ESP32 firmware for driving salvaged P20 triangle RGB LED panels
+    with xLights and FPP. Free to use, free to modify.
+  </p>
+  <div class="badge-row">
+    <span class="badge green">v1.0 - Stable</span>
+    <span class="badge">ESP32 WROOM-32</span>
+    <span class="badge">P20 Triangle Panels</span>
+    <span class="badge">xLights + FPP</span>
+    <span class="badge">MIT License</span>
+  </div>
+
+  <div class="install-card">
+    <h2>Install Firmware</h2>
+    <p>
+      Connect your ESP32 via USB, then click the button below.
+      No software to download - installs directly from your browser.
+    </p>
+    <esp-web-install-button manifest="flasher/manifest.json"></esp-web-install-button>
+    <p class="compat-note">
+      Requires Chrome or Edge browser (Web Serial API).
+      Firefox and Safari are not supported.
+      <a href="#manual">Manual install instructions below.</a>
+    </p>
+  </div>
+</div>
+
+
+<!-- WHAT YOU GET -->
+<div class="section">
+  <h2>What You Get</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>Full Color BCM Rendering</h3>
+      <p>Binary Code Modulation cycles 4 bit-planes at 133 Hz, giving 4096 colors and smooth gradients instead of just on/off.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Web Interface</h3>
+      <p>Built-in web UI for test colors, brightness, orientation, BCM speed, panel arrangement, diagnostics, and OTA updates.</p>
+    </div>
+    <div class="feature-card">
+      <h3>xLights + FPP Ready</h3>
+      <p>Receives DDP packets from Falcon Player. Set up your sequences in xLights and stream them live to your panels.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Up to 4 Panels</h3>
+      <p>Drive 1 to 4 panels from a single ESP32. Arrange them in any grid layout using the web UI - no code changes needed.</p>
+    </div>
+    <div class="feature-card">
+      <h3>OTA Updates</h3>
+      <p>Update firmware over WiFi from the web UI. No need to reconnect USB after the initial flash.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Diagnostics</h3>
+      <p>Live signal strength, DDP frame rate, heap usage, MAC address, and an optional debug log - all in the browser.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- WHAT YOU NEED -->
+<div class="section">
+  <h2>What You Need</h2>
+
+  <table class="hw-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ESP32 (various Models Work)</td>
+        <td>30-pin board, D0WD-V3 chip recommended. Most generic "ESP32 Dev Module" boards work but was verified on WROOM-32.</td>
+      </tr>
+      <tr>
+        <td>P20 Triangle RGB Panels</td>
+        <td>Grouptek brand, 20x20 pixels (400 triangles). These are the salvaged real estate sign panels this firmware was built for.</td>
+      </tr>
+      <tr>
+        <td>5V Power Supply</td>
+        <td>Dedicated supply for the panels. Budget ~2-3A per panel at full white. Do NOT power panels from the ESP32 USB port.</td>
+      </tr>
+      <tr>
+        <td>20-pin Ribbon Cable</td>
+        <td>HUB16 style. Comes with the panels. One per panel in a chain.</td>
+      </tr>
+      <tr>
+        <td>Raspberry Pi 4 running FPP</td>
+        <td>Falcon Player receives sequences from xLights and streams DDP to the ESP32. FPP 9.x or later.</td>
+      </tr>
+      <tr>
+        <td>xLights on a PC or Mac</td>
+        <td>Free sequencing software. Used to build your light shows and upload them to FPP.</td>
+      </tr>
+      <tr>
+        <td>Chrome or Edge browser</td>
+        <td>Required for the browser installer (Web Serial API). Any browser works for the ESP32 web interface after install.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn" style="margin-top:20px">
+    <b>Important:</b> The 5V panel supply ground must be connected to the ESP32 GND pin.
+    Without a shared ground the panels will not respond.
+  </div>
+</div>
+
+
+<!-- HOW TO INSTALL -->
+<div class="section">
+  <h2>How to Install</h2>
+
+  <ol class="steps">
+    <li>
+      <div class="step-content">
+        <h3>Install the USB driver (if needed)</h3>
+        <p>
+          Most ESP32 dev boards use a CH340 or CP2102 USB chip.
+          If your computer does not recognize the ESP32 when plugged in,
+          download and install the driver for your chip before continuing.
+          Windows 10/11 usually installs CH340 automatically.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Connect your ESP32 via USB</h3>
+        <p>
+          Use a data-capable USB cable (not a charge-only cable).
+          Open Chrome or Edge on your computer.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Click Install Firmware at the top of this page</h3>
+        <p>
+          Your browser will ask you to select the serial port your ESP32 is connected to.
+          Choose the port labeled with your ESP32's USB chip (CH340, CP2102, or similar).
+          The installer will erase the ESP32 and flash ReclaimPanel automatically.
+          This takes about 30 seconds.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Connect to the setup WiFi network</h3>
+        <p>
+          After flashing, the ESP32 starts a setup access point.
+          On your phone or computer, connect to WiFi network:
+          <code>ReclaimPanel-Setup</code> with password <code>reclaim1</code>
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Open the web interface</h3>
+        <p>
+          Open a browser and go to <code>reclaimpanel.local</code> or <code>192.168.4.1</code> .
+          You will see the ReclaimPanel setup page.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Configure your settings</h3>
+        <p>
+          Under the <b>Network</b> tab: enter your WiFi name, password, and a static IP
+          (default <code>10.0.0.101</code> works for most setups).
+          Under the <b>Panels</b> tab: set the number of panels and the start channel
+          to match your xLights model.
+          Click <b>Save and Restart</b>.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Wire your panels</h3>
+        <p>
+          Connect the 20-pin ribbon cable from the ESP32 breakout to Panel 0 IN.
+          For multiple panels, daisy-chain OUT to IN.
+          Connect the 5V supply to the panels and <b>connect the supply GND to ESP32 GND</b>.
+          See the full <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/docs/WIRING.md" style="color:var(--orange)">wiring guide</a> for pin details.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Set up xLights and FPP</h3>
+        <p>
+          In xLights, create a DDP controller pointed at your ESP32 IP with the correct
+          start channel and channel count (1200 per panel).
+          Create a Matrix model: 20x20 per panel, Top Right, Horizontal, Don't Zig Zag.
+          Upload sequences to FPP using FPP Connect, then play from FPP.
+          See the full <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/docs/XLIGHTS_FPP.md" style="color:var(--orange)">xLights and FPP guide</a>.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="callout info">
+    <b>Test without FPP:</b> Use the Test tab in the web interface to send solid colors and
+    run the Chase animation. If Chase works but FPP does not, the issue is in your
+    FPP or xLights configuration, not the firmware.
+  </div>
+</div>
+
+
+<!-- AFTER INSTALL -->
+<div class="section">
+  <h2>Wiring Quick Reference</h2>
+
+  <div class="wiring-block">
+Pin 1  DR1  ->  GPIO 25      Pin 2  DG1  ->  GPIO 26      Pin 3  DB1  ->  GPIO 27
+Pin 4  DR2  ->  GPIO 14      Pin 5  DG2  ->  GPIO 33      Pin 6  DB2  ->  GPIO 13
+Pin 7  DR3  ->  GPIO 23      Pin 8  DG3  ->  GPIO 19      Pin 9  DB3  ->  GPIO  5
+Pin 10 DR4  ->  GPIO 17      Pin 11 DG4  ->  GPIO 16      Pin 12 DB4  ->  GPIO  4
+Pin 13 DR5  ->  GPIO  2      Pin 14 DG5  ->  GPIO 15      Pin 15 DB5  ->  GPIO 18
+Pin 16 GND  ->  GND          Pin 17 CLK  ->  GPIO 22      Pin 18 GND  ->  GND
+Pin 19 LAT  ->  GPIO 21      Pin 20 OE   ->  GPIO  3
+  </div>
+
+  <div class="callout tip" style="margin-top:16px">
+    DG2 uses GPIO 33, not GPIO 12. GPIO 12 is a strapping pin that causes boot failures
+    when driven HIGH at startup.
+  </div>
+</div>
+
+
+<!-- MANUAL INSTALL -->
+<div class="section" id="manual">
+  <h2>Manual Install (Arduino IDE)</h2>
+
+  <p style="color:var(--muted); margin-bottom:20px">
+    If the browser installer does not work, you can flash using Arduino IDE 2.x.
+  </p>
+
+  <ol class="steps">
+    <li>
+      <div class="step-content">
+        <h3>Install Arduino IDE 2.x</h3>
+        <p>Download from <a href="https://www.arduino.cc/en/software" style="color:var(--orange)">arduino.cc/en/software</a></p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Add ESP32 board support</h3>
+        <p>
+          File > Preferences > Additional Board Manager URLs, add:<br>
+          <code>https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json</code><br>
+          Then Tools > Board > Board Manager, search for <code>esp32</code> and install.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Download the firmware source</h3>
+        <p>
+          Download the repository from GitHub and open
+          <code>ReclaimPanel/ReclaimPanel.ino</code> in Arduino IDE.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Set board settings</h3>
+        <p>
+          Tools > Board: <code>ESP32 Dev Module</code><br>
+          Partition Scheme: <code>Minimal SPIFFS (1.9MB APP with OTA / 128KB SPIFFS)</code><br>
+          CPU Frequency: <code>240 MHz</code><br>
+          Flash Size: <code>4MB (32Mb)</code><br>
+          Upload Speed: <code>921600</code>
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="step-content">
+        <h3>Upload</h3>
+        <p>Select your ESP32 COM port under Tools > Port, then click Upload.</p>
+      </div>
+    </li>
+  </ol>
+</div>
+
+
+<!-- FAQ -->
+<div class="section">
+  <h2>Frequently Asked Questions</h2>
+
+  <div class="faq-item">
+    <h3>Will this work with standard HUB75 panels?</h3>
+    <p>No. This firmware is specifically for P20 triangle panels with HUB16 connectors
+    (5 parallel shift register chains). It will not work with HUB75 panels and vice versa.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>My panels light up but show wrong colors on the bottom half.</h3>
+    <p>The bit mapping for shift register groups 2-4 (rows 9-20) may need hardware
+    verification for your specific panel batch. Try toggling Flip Rows and Flip Columns
+    in the Display tab. This is a known area for further testing with different panel revisions.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>FPP can ping the ESP32 but no DDP packets arrive.</h3>
+    <p>Check that the start channel in the FPP output configuration exactly matches
+    what is set in the ESP32 web UI Panels tab. A mismatch causes all packets to be
+    silently discarded. Also confirm the FPP output type is DDP, not E1.31 or artnet.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>I see flickering in BCM color mode.</h3>
+    <p>Open the Display tab in the web interface and drag the BCM Cycle Speed slider
+    to the left (lower microseconds = faster refresh). Try 200-300 us for flicker-free
+    output. If you see corrupted pixels at low values, increase it slightly.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>Can I run more than 4 panels from one ESP32?</h3>
+    <p>The current firmware supports up to 4 panels per ESP32. For larger installations,
+    use multiple ESP32 units with separate DDP addresses and combine them as separate
+    controllers in xLights.</p>
+  </div>
+
+  <div class="faq-item">
+    <h3>The browser installer does not see my ESP32.</h3>
+    <p>Make sure you are using Chrome or Edge (not Firefox or Safari). Confirm the
+    USB cable supports data transfer. Install the CH340 or CP2102 driver if your OS
+    does not recognize the device automatically.</p>
+  </div>
+</div>
+
+
+<!-- ABOUT -->
+<div class="section">
+  <h2>About This Project</h2>
+  <p style="color:var(--muted); max-width:700px; line-height:1.8">
+    The Draper Family Light Show is a free community event run by the entire Draper Family in Kenton, Ohio.
+    Our charity light show was gifted 60 older P20 triangle LED panels from a local real estate company
+    that was upgrading to newer displays. What started as a salvage project turned into a deep dive
+    when we discovered there was no compatible open source controllers for these panels anywhere.
+  </p>
+  <p style="color:var(--muted); max-width:700px; line-height:1.8; margin-top:14px">
+    Every existing solution... WLED, SmartMatrix, and the HUB75 ESP32 library.... targets newer panels
+    that use dedicated row address lines and multiplexing in HUB75. These older panels use 5 independent 80-bit
+    shift register chains sharing a single CLK, LAT, and OE line with no row addressing at all... UGH!
+    No datasheet exists for them so after countless hours of hardware testing and a ton of firmware versions,
+    the protocol was fully reverse engineered. It came down to the clock... once the 80-bit chain with
+    a single shared latch was cracked, everything clicked into place. We decided to open source the
+    result so nobody else has to go through the same process.
+  </p>
+
+  <h3 style="color:var(--orange); margin-top:32px; font-size:1rem">Thanks and Credits</h3>
+  <p style="color:var(--muted); max-width:700px; line-height:1.8">
+    This project would not have come together without these tools and communities:
+  </p>
+  <ul style="color:var(--muted); max-width:700px; line-height:2; padding-left:20px">
+    <li><b style="color:#eee">WLED</b> - inspiration for the web interface layout and OTA update approach</li>
+    <li><b style="color:#eee">ESP Web Tools</b> (Nabu Casa) - the browser based firmware installer used on this page</li>
+    <li><b style="color:#eee">xLights and Falcon Player (FPP)</b> - the sequencing and playback platform this firmware is built around, and the source of the DDP protocol documentation</li>
+    <li><b style="color:#eee">SmartMatrix and HUB75 ESP32 library</b> - studying these helped identify what the P20 panels were NOT doing, which pointed the way to reverse engineering the actual protocol</li>
+    <li><b style="color:#eee">ESP32 Arduino Core</b> - WebServer, Preferences, OTA Update, ESPmDNS, and WiFi libraries that power the firmware</li>
+  </ul>
+</div>
+
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    ReclaimPanel is open source under the
+    <a href="https://github.com/thedrapercode/ReclaimPanel/blob/main/LICENSE">MIT License</a>.
+    &nbsp;|&nbsp;
+    <a href="https://github.com/thedrapercode/ReclaimPanel">View on GitHub</a>
+    &nbsp;|&nbsp;
+    Developed by Justin Draper / JD Labs, Kenton Ohio
+  </p>
+  <p style="margin-top:8px; font-size:12px; color:#555">
+    Browser installer powered by
+    <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>
+  </p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "ReclaimPanel",
+  "version": "1.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "https://github.com/thedrapercode/ReclaimPanel/releases/download/v1.0/ReclaimPanel.ino.bootloader.bin",
+          "offset": 4096
+        },
+        {
+          "path": "https://github.com/thedrapercode/ReclaimPanel/releases/download/v1.0/ReclaimPanel.ino.partitions.bin",
+          "offset": 32768
+        },
+        {
+          "path": "https://github.com/thedrapercode/ReclaimPanel/releases/download/v1.0/ReclaimPanel.ino.bin",
+          "offset": 65536
+        }
+      ]
+    }
+  ]
+}
